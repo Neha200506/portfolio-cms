@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { getMedia, uploadMediaFile, deleteMedia } from "../services/api";
+import { getMedia, uploadMediaFile, replaceMediaFile, deleteMedia } from "../services/api";
 import "./Media.css";
 
 function Media() {
@@ -14,6 +14,8 @@ function Media() {
   const [selectedMedia, setSelectedMedia] = useState(null);
 
   const fileInputRef = useRef(null);
+  const replaceInputRef = useRef(null);
+  const [replaceMediaId, setReplaceMediaId] = useState(null);
 
   const fetchMedia = async () => {
     setLoading(true);
@@ -48,6 +50,14 @@ function Media() {
   const handleUploadClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
+    }
+  };
+
+  const handleReplaceClick = (id, e) => {
+    if (e) e.stopPropagation();
+    setReplaceMediaId(id);
+    if (replaceInputRef.current) {
+      replaceInputRef.current.click();
     }
   };
 
@@ -89,6 +99,52 @@ function Media() {
     } finally {
       setUploading(false);
       setUploadProgress(0);
+      if (e.target) {
+        e.target.value = "";
+      }
+    }
+  };
+
+  const handleReplaceFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !replaceMediaId) return;
+
+    setErrorMessage("");
+    setSuccessMessage("");
+    setUploading(true);
+    setUploadProgress(0);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await replaceMediaFile(replaceMediaId, formData, (progressEvent) => {
+        if (progressEvent.total) {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setUploadProgress(percentCompleted);
+        }
+      });
+
+      setSuccessMessage(response.data?.message || "Media item replaced successfully!");
+      if (selectedMedia && selectedMedia.id === replaceMediaId && response.data?.data) {
+        setSelectedMedia(response.data.data);
+      }
+      fetchMedia();
+    } catch (error) {
+      console.error("Error replacing media item:", error);
+      let msg = "Failed to replace media item.";
+      if (error.response?.data?.message) {
+        msg = error.response.data.message;
+      } else if (error.message) {
+        msg = error.message;
+      }
+      setErrorMessage(msg);
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+      setReplaceMediaId(null);
       if (e.target) {
         e.target.value = "";
       }
@@ -167,12 +223,18 @@ function Media() {
   return (
     <div className="media-container">
       <div className="media-wrapper">
-        {/* Hidden File Input */}
+        {/* Hidden File Inputs */}
         <input
           type="file"
           ref={fileInputRef}
           style={{ display: "none" }}
           onChange={handleFileSelect}
+        />
+        <input
+          type="file"
+          ref={replaceInputRef}
+          style={{ display: "none" }}
+          onChange={handleReplaceFileSelect}
         />
 
         {/* Header Bar */}
@@ -331,8 +393,22 @@ function Media() {
                         <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                         <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                       </svg>
-                      <span>Copy Link</span>
+                      <span>Copy</span>
                     </button>
+
+                    <button
+                      className="btn-secondary"
+                      onClick={(e) => handleReplaceClick(item.id, e)}
+                      disabled={uploading || actionLoading}
+                      title="Edit / Replace File"
+                    >
+                      <svg className="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                      <span>Edit / Replace</span>
+                    </button>
+
                     <button
                       className="btn-danger"
                       onClick={(e) => handleDelete(item.id, e)}
@@ -429,17 +505,31 @@ function Media() {
               </div>
 
               <div className="modal-footer-actions">
-                <button
-                  className="btn-danger"
-                  onClick={() => handleDelete(selectedMedia.id)}
-                  disabled={actionLoading}
-                >
-                  <svg className="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                  </svg>
-                  <span>Delete File</span>
-                </button>
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <button
+                    className="btn-secondary"
+                    onClick={(e) => handleReplaceClick(selectedMedia.id, e)}
+                    disabled={uploading || actionLoading}
+                  >
+                    <svg className="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                    <span>Edit / Replace</span>
+                  </button>
+
+                  <button
+                    className="btn-danger"
+                    onClick={() => handleDelete(selectedMedia.id)}
+                    disabled={actionLoading}
+                  >
+                    <svg className="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    </svg>
+                    <span>Delete File</span>
+                  </button>
+                </div>
 
                 <div style={{ display: "flex", gap: "0.75rem" }}>
                   {selectedMedia.file_url && (

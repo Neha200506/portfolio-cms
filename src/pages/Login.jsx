@@ -224,6 +224,10 @@ function Login() {
           </button>
         </form>
 
+        <p className="admin-info-note">
+          Administrator account is created during system setup. Use your admin credentials to sign in.
+        </p>
+
         <div className="login-footer">
           <p>Portfolio Content Management System</p>
         </div>
