@@ -25,7 +25,7 @@ function Login() {
     setIsLoading(true);
 
     try {
-      const response = await axios.post("http://localhost:5000/api/auth/login", {
+      const response = await axios.post("https://portfolio-backend-rz1n.onrender.com/api/auth/login", {
         email,
         password
       });
@@ -62,7 +62,7 @@ function Login() {
         }
       } else if (error.request) {
         // Request was made but no response received (e.g. Network Error / CORS / Backend Offline)
-        backendMessage = error.message || "Network Error: Could not connect to http://localhost:5000";
+        backendMessage = error.message || "Network Error: Could not connect to the backend";
       } else {
         backendMessage = error.message || "An error occurred during login.";
       }

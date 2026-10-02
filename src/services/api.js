@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: "https://portfolio-backend-rz1n.onrender.com/api",
 });
 
 API.interceptors.request.use(
@@ -45,16 +45,13 @@ export const uploadMediaFile = (formData, onUploadProgress) =>
     headers: { "Content-Type": "multipart/form-data" },
     onUploadProgress,
   });
+
 export const replaceMediaFile = (id, formData, onUploadProgress) =>
   API.put(`/media/${id}/replace`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
     onUploadProgress,
   });
+
 export const deleteMedia = (id) => API.delete(`/media/${id}`);
 
 export default API;
-
-
-
-
-
